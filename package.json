@@ -1,0 +1,15 @@
+{
+  "name": "garbage-dogposal-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A tiny cooking game for Vibe Games. The garbage disposal is a chihuahua.",
+  "type": "module",
+  "scripts": {
+    "serve": "node tools/serve.mjs",
+    "test": "node --test tools/tests/",
+    "check": "node tools/check.mjs && node tools/check-food.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

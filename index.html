@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4EFE6">
+<title>Garbage Dogposal Simulator</title>
+<meta name="description" content="A tiny cooking game. Chop veggies, share the right scraps. The garbage disposal is a chihuahua.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M8 4 L30 22 L16 36 Z' fill='%236B3E26'/%3E%3Cpath d='M56 4 L34 22 L48 36 Z' fill='%236B3E26'/%3E%3Cpath d='M13 10 L26 22 L18 30 Z' fill='%23E8A48C'/%3E%3Cpath d='M51 10 L38 22 L46 30 Z' fill='%23E8A48C'/%3E%3Cellipse cx='32' cy='38' rx='20' ry='18' fill='%236B3E26'/%3E%3Cellipse cx='32' cy='47' rx='9' ry='7' fill='%23D9A066'/%3E%3Ccircle cx='24' cy='37' r='4.5' fill='%23120905'/%3E%3Ccircle cx='40' cy='37' r='4.5' fill='%23120905'/%3E%3Ccircle cx='22.6' cy='35.6' r='1.4' fill='%23fff'/%3E%3Ccircle cx='38.6' cy='35.6' r='1.4' fill='%23fff'/%3E%3Cellipse cx='32' cy='44' rx='3' ry='2.2' fill='%233A2218'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./src/ui/ui.css">
+<link rel="modulepreload" href="./src/main.js">
+<link rel="modulepreload" href="./src/config.js">
+<link rel="modulepreload" href="./src/strings.js">
+<link rel="modulepreload" href="./src/core/loop.js">
+<link rel="modulepreload" href="./src/core/layout.js">
+<link rel="modulepreload" href="./src/core/viewport.js">
+<link rel="modulepreload" href="./src/core/input.js">
+<link rel="modulepreload" href="./src/core/storage.js">
+<link rel="modulepreload" href="./src/core/perf.js">
+<link rel="modulepreload" href="./src/core/math.js">
+<link rel="modulepreload" href="./src/core/rng.js">
+<link rel="modulepreload" href="./src/audio/audio.js">
+<link rel="modulepreload" href="./src/render/cache.js">
+<link rel="modulepreload" href="./src/render/kitchen.js">
+<link rel="modulepreload" href="./src/dog/states.js">
+<link rel="modulepreload" href="./src/dog/brain.js">
+<link rel="modulepreload" href="./src/dog/draw.js">
+<link rel="modulepreload" href="./src/dog/rig.js">
+<link rel="modulepreload" href="./src/dog/springs.js">
+<link rel="modulepreload" href="./src/render/fx.js">
+<link rel="modulepreload" href="./src/audio/sfx.js">
+<link rel="modulepreload" href="./src/game/session.js">
+<link rel="modulepreload" href="./src/game/rules.js">
+<link rel="modulepreload" href="./src/game/shifts.js">
+<link rel="modulepreload" href="./src/game/events.js">
+<link rel="modulepreload" href="./src/game/upgrades.js">
+<link rel="modulepreload" href="./src/game/skins.js">
+<link rel="modulepreload" href="./src/food/ingredients.js">
+<link rel="modulepreload" href="./src/food/art.js">
+<link rel="modulepreload" href="./src/food/blade.js">
+<link rel="modulepreload" href="./src/ui/screens.js">
+<link rel="modulepreload" href="./src/ui/hud.js">
+<link rel="modulepreload" href="./src/ui/icons.js">
+</head>
+<body>
+<div id="stage" class="booting">
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <canvas id="game" role="img"></canvas>
+  <div id="ui">
+    <section id="title" class="screen">
+      <div class="title-card">
+        <h1 class="game-title" data-str="title"></h1>
+        <p class="subtitle" data-str="subtitle"></p>
+        <button id="play" class="btn btn-primary btn-l" type="button" data-str="playSort"></button>
+        <div class="title-row">
+          <button id="play-rush" class="btn btn-secondary btn-m" type="button" data-str="playRush"></button>
+          <button id="btn-records" class="btn btn-secondary btn-m" type="button" data-str="records"></button>
+          <button id="btn-skins" class="btn btn-secondary btn-m" type="button" data-str="skins"></button>
+          <button id="btn-training" class="btn btn-secondary btn-m" type="button" data-str="training"></button>
+        </div>
+        <p id="title-best" class="tag title-best" hidden></p>
+        <p class="tag" data-str="tag"></p>
+      </div>
+    </section>
+    <header id="hud" class="hud">
+      <div class="hud-left">
+        <p class="hint-rotate" data-str="rotateHint"></p>
+        <div id="hud-card" class="hud-card" hidden>
+          <span id="hud-day" class="hud-day"></span>
+          <span id="hud-recipe" class="hud-recipe"></span>
+          <span id="hud-portions" class="hud-portions"></span>
+        </div>
+        <span id="toast" class="toast" role="status" aria-live="polite"></span>
+      </div>
+      <div class="hud-right">
+        <div id="hud-stats" class="hud-stats" hidden>
+          <span id="hud-timer" class="hud-timer"></span>
+          <span id="hud-score" class="hud-score"></span>
+          <span id="hud-strikes" class="hud-strikes"></span>
+        </div>
+        <button id="btn-mute" class="btn btn-icon" type="button" data-aria="ariaMute"></button>
+        <button id="btn-fs" class="btn btn-icon" type="button" data-aria="ariaFullscreen"></button>
+        <button id="btn-pause" class="btn btn-icon" type="button" data-aria="ariaPause" hidden></button>
+      </div>
+    </header>
+    <div id="ai-line" class="ai-line" role="status" aria-live="polite"></div>
+    <section id="card" class="screen screen-card" hidden>
+      <div class="panel card-panel">
+        <p id="card-ai" class="card-ai"></p>
+        <h2 id="card-title"></h2>
+        <p id="card-joke" class="sub"></p>
+        <p id="card-new" class="card-new" hidden><span class="tag-no" data-str="newNotForDogs"></span> <span id="card-new-list"></span></p>
+        <p class="note" data-str="tapToStart"></p>
+      </div>
+    </section>
+    <section id="shiftend" class="screen screen-card" hidden>
+      <div class="panel card-panel">
+        <h2 id="se-title"></h2>
+        <div id="se-stars" class="stars"></div>
+        <p id="se-place" class="se-place" hidden></p>
+      </div>
+    </section>
+    <section id="report" class="screen screen-modal" hidden>
+      <div class="panel report-panel" role="dialog" aria-modal="true" aria-labelledby="report-title">
+        <h2 id="report-title" data-str="reportTitle"></h2>
+        <p class="sub" data-str="reportUnit"></p>
+        <div id="report-stars" class="stars"></div>
+        <p id="report-rank" class="report-rank"></p>
+        <p id="report-extra" class="report-extra" hidden></p>
+        <dl id="report-list" class="report-list"></dl>
+        <p class="note" data-str="reportEfficiency"></p>
+        <div class="report-actions">
+          <button id="btn-again" class="btn btn-primary btn-m" type="button" data-str="again"></button>
+          <button id="btn-report-menu" class="btn btn-secondary btn-m" type="button" data-str="mainMenu"></button>
+        </div>
+        <p class="note small" data-str="realDogs"></p>
+      </div>
+    </section>
+    <section id="records" class="screen screen-modal" hidden>
+      <div class="panel records-panel" role="dialog" aria-modal="true" aria-labelledby="records-title">
+        <h2 id="records-title" data-str="recordsTitle"></h2>
+        <div class="seg">
+          <button id="rec-sort" class="btn btn-secondary btn-s" type="button" data-str="modeSort"></button>
+          <button id="rec-rush" class="btn btn-secondary btn-s" type="button" data-str="modeRush"></button>
+        </div>
+        <div id="records-table" class="records-table"></div>
+        <button id="btn-records-close" class="btn btn-primary btn-m" type="button" data-str="close"></button>
+      </div>
+    </section>
+    <section id="skinsel" class="screen screen-modal" hidden>
+      <div class="panel skins-panel" role="dialog" aria-modal="true" aria-labelledby="skins-title">
+        <h2 id="skins-title" data-str="skinsTitle"></h2>
+        <p class="sub" data-str="skinsSub"></p>
+        <div id="skins-list" class="skins-list"></div>
+        <button id="btn-skins-close" class="btn btn-primary btn-m" type="button" data-str="close"></button>
+      </div>
+    </section>
+    <section id="cards" class="screen screen-modal" hidden>
+      <div class="panel cards-panel" role="dialog" aria-modal="true" aria-labelledby="cards-title">
+        <h2 id="cards-title" data-str="cardsTitle"></h2>
+        <p class="sub" data-str="cardsSub"></p>
+        <div id="cards-list" class="cards-list"></div>
+      </div>
+    </section>
+    <section id="pause" class="screen screen-modal" hidden>
+      <div class="panel" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+        <h2 id="pause-title" data-str="paused"></h2>
+        <p id="pause-sub" class="sub" data-str="pausedSub"></p>
+        <button id="btn-resume" class="btn btn-primary btn-m" type="button" data-str="resume"></button>
+        <button id="btn-sound" class="btn btn-secondary btn-m" type="button"></button>
+        <button id="btn-dogmenu" class="btn btn-secondary btn-m" type="button" data-str="dogMenu"></button>
+        <button id="btn-hide" class="btn btn-secondary btn-m" type="button" data-str="hideUi"></button>
+        <button id="btn-restart" class="btn btn-secondary btn-m" type="button" data-str="restart"></button>
+        <button id="btn-menu" class="btn btn-secondary btn-m" type="button" data-str="mainMenu"></button>
+        <p id="ios-note" class="note" data-str="iosSilent" hidden></p>
+      </div>
+    </section>
+    <section id="dogmenu" class="screen screen-modal" hidden>
+      <div class="panel dogmenu-panel" role="dialog" aria-modal="true" aria-labelledby="dogmenu-title">
+        <h2 id="dogmenu-title" data-str="dogMenuTitle"></h2>
+        <div class="dogmenu-cols">
+          <div><h3 class="col-ok" data-str="dogMenuOk"></h3><ul id="dm-ok"></ul></div>
+          <div><h3 class="col-no" data-str="dogMenuNo"></h3><ul id="dm-no"></ul></div>
+          <div><h3 class="col-bin" data-str="dogMenuBin"></h3><ul id="dm-bin"></ul></div>
+        </div>
+        <p class="note small" data-str="realDogs"></p>
+        <button id="btn-dogmenu-close" class="btn btn-primary btn-m" type="button" data-str="close"></button>
+      </div>
+    </section>
+  </div>
+  <pre id="dbg" hidden></pre>
+</div>
+<script>
+  // Opened straight from disk: browsers refuse to load JavaScript modules from file://.
+  // Say so instead of showing empty buttons. On the website (https) this never runs.
+  if (location.protocol === 'file:') {
+    document.querySelector('.title-card').innerHTML =
+      '<h1 class="game-title">Garbage Dogposal Simulator</h1>' +
+      '<p class="subtitle">This copy was opened as a file, so the browser blocked the game code.</p>' +
+      '<p class="tag">To play on this computer, double-click play-local.cmd in the game folder.</p>';
+    document.getElementById('hud').hidden = true;
+  }
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

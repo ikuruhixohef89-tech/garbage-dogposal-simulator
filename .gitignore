@@ -1,0 +1,24 @@
+# Source video and its frames are someone else's content: never commit them.
+*.mp4
+*.mov
+*.webm
+
+node_modules/
+.env*
+tools/out/
+
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Internal working documents of the agent that built the game: not for the public repo.
+BRIEFING.md
+Design.md
+GAME_BRIEF.md
+GAME_PLAN.md
+Memory.md
+REWORK_PLAN.md
+Rules.md
+spec.md
+site/sources.md
+site/entry.md

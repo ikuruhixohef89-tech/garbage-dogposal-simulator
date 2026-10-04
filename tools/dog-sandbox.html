@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crumb sandbox</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #F4EFE6; color: #3A2418; font: 600 13px/1.3 system-ui, "Segoe UI", sans-serif; }
+  #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .bar { position: fixed; left: 8px; top: 8px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 2; }
+  .bar button { font: inherit; padding: 6px 10px; border-radius: 10px; border: 2px solid #3A2418; background: #FFF8EC; cursor: default; }
+  .bar button.on { background: #FFC93C; }
+  #info { position: fixed; right: 8px; bottom: 8px; font: 11px/1.3 ui-monospace, Consolas, monospace; background: rgba(0,0,0,.6); color: #fff; padding: 4px 6px; white-space: pre; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar">
+  <button id="v-sheet" class="on">Sheet</button>
+  <button id="v-one">One big</button>
+  <button id="t-alive" class="on">Alive</button>
+</div>
+<div id="info"></div>
+<script type="module" src="./dog-sandbox.mjs"></script>
+</body>
+</html>

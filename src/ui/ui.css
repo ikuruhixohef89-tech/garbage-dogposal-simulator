@@ -1,0 +1,1041 @@
+/* Garbage Dogposal Simulator: DOM UI over the canvas. Values come from Design.md. */
+
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --ui: 1;
+
+  --ink: #3A2418;
+  --ink-muted: #7A6250;
+  --paper: #FFF8EC;
+  --paper-shade: #F1E6D3;
+  --paper-lip: #D8C9B0;
+  --primary: #FFC93C;
+  --primary-hover: #FFD866;
+  --primary-lip: #D99A1E;
+  --scrim: rgba(58, 36, 24, 0.55);
+  --wall: #F4EFE6;
+
+  --font: ui-rounded, "SF Pro Rounded", system-ui, "Segoe UI", Roboto, sans-serif;
+  --edge: max(12px, calc(24px * var(--ui)));
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--wall);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Scroll chaining to the host page is allowed on the title screen, blocked while playing. */
+html.playing,
+html.playing body {
+  overscroll-behavior: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+#game,
+#bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#game {
+  touch-action: pan-y;
+  cursor: default;
+}
+
+/* The static kitchen: painted once per layout, composited by the browser under the game canvas. */
+#bg {
+  pointer-events: none;
+}
+
+html.playing #game {
+  touch-action: none;
+}
+
+#ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#stage.ui-hidden #ui {
+  visibility: hidden;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  pointer-events: auto;
+  font: inherit;
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  cursor: default;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out, background-color 120ms ease-out;
+  touch-action: manipulation;
+}
+
+.btn:focus {
+  outline: none;
+}
+
+.btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 6px var(--ink);
+}
+
+.btn-primary {
+  background: var(--primary);
+  box-shadow: 0 8px 0 var(--primary-lip);
+}
+
+.btn-secondary,
+.btn-icon {
+  background: var(--paper);
+  box-shadow: 0 6px 0 var(--paper-lip);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 0 var(--primary-lip);
+  }
+  .btn-secondary:hover,
+  .btn-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 0 var(--paper-lip);
+  }
+}
+
+.btn-primary:active {
+  transform: translateY(8px);
+  box-shadow: 0 0 0 var(--primary-lip);
+  transition-duration: 60ms;
+}
+
+.btn-secondary:active,
+.btn-icon:active {
+  transform: translateY(6px);
+  box-shadow: 0 0 0 var(--paper-lip);
+  transition-duration: 60ms;
+}
+
+.btn-l {
+  min-width: max(160px, calc(300px * var(--ui)));
+  min-height: max(48px, calc(96px * var(--ui)));
+  padding: 0 max(24px, calc(48px * var(--ui)));
+  font-size: max(24px, calc(48px * var(--ui)));
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.btn-m {
+  min-width: max(120px, calc(220px * var(--ui)));
+  min-height: max(44px, calc(64px * var(--ui)));
+  padding: 0 max(16px, calc(28px * var(--ui)));
+  font-size: max(16px, calc(26px * var(--ui)));
+  font-weight: 700;
+}
+
+.btn-icon {
+  width: max(44px, calc(56px * var(--ui)));
+  height: max(44px, calc(56px * var(--ui)));
+  padding: 0;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  box-shadow: 0 4px 0 var(--paper-lip);
+}
+
+.btn-icon svg {
+  width: max(22px, calc(28px * var(--ui)));
+  height: max(22px, calc(28px * var(--ui)));
+}
+
+/* ---------- Title ---------- */
+
+.screen {
+  position: absolute;
+  inset: 0;
+}
+
+#title {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: calc(var(--sat) + var(--edge)) calc(var(--sar) + var(--edge)) calc(var(--sab) + var(--edge)) calc(var(--sal) + var(--edge));
+  box-sizing: border-box;
+}
+
+.title-card {
+  pointer-events: none;
+  width: min(56%, 720px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: max(8px, calc(16px * var(--ui)));
+}
+
+.title-card .btn {
+  pointer-events: auto;
+}
+
+.game-title {
+  margin: 0;
+  font-size: max(30px, calc(72px * var(--ui)));
+  line-height: 0.95;
+  font-weight: 800;
+  color: var(--paper);
+  paint-order: stroke fill;
+  -webkit-text-stroke: max(4px, calc(6px * var(--ui))) var(--ink);
+  text-shadow: 0 max(4px, calc(6px * var(--ui))) 0 var(--ink);
+}
+
+.subtitle,
+.tag {
+  margin: 0;
+  font-weight: 600;
+}
+
+.subtitle {
+  font-size: max(14px, calc(22px * var(--ui)));
+}
+
+.tag {
+  font-size: max(12px, calc(16px * var(--ui)));
+  color: var(--ink-muted);
+  letter-spacing: 0.04em;
+}
+
+/* Shown only on the title screen, in compact mode, on touch screens: sits left of the HUD buttons. */
+.hint-rotate {
+  display: none;
+  margin: 0;
+  max-width: 220px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: rgba(255, 248, 236, 0.85);
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+#stage.portrait #title {
+  align-items: flex-end;
+  justify-content: center;
+}
+
+#stage.portrait .title-card {
+  width: 100%;
+  margin-bottom: 4vh;
+}
+
+#stage.compact .subtitle,
+#stage.compact .tag {
+  display: none;
+}
+
+/* Compact (site iframe on a phone, ~343x193): keep clear of the HUD row at the top. */
+#stage.compact #title {
+  align-items: flex-start;
+  padding-top: calc(var(--sat) + 60px);
+  padding-bottom: 6px;
+}
+
+#stage.compact .title-card {
+  width: 62%;
+  gap: 6px;
+}
+
+#stage.compact .game-title {
+  font-size: 20px;
+  -webkit-text-stroke-width: 3px;
+  text-shadow: 0 2px 0 var(--ink);
+}
+
+#stage.compact .btn-l {
+  min-width: 150px;
+  min-height: 48px;
+  font-size: 22px;
+  box-shadow: 0 5px 0 var(--primary-lip);
+}
+
+/* Very low frames (small phones, ~288x162): PLAY wins over the title; the site shows the title anyway. */
+@media (max-height: 180px) {
+  #stage.compact .game-title {
+    display: none;
+  }
+  #stage.compact #title {
+    align-items: center;
+    padding-top: calc(var(--sat) + 52px);
+  }
+}
+
+@media (pointer: coarse) {
+  html:not(.playing) #stage.compact .hint-rotate {
+    display: block;
+  }
+}
+
+#play {
+  animation: breathe 1.25s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { scale: 1; }
+  50% { scale: 1.03; }
+}
+
+/* ---------- HUD ---------- */
+
+/* The HUD stays above every overlay (cards, pause, report), so Pause, Sound and Fullscreen always work. */
+.hud {
+  z-index: 3;
+  position: absolute;
+  top: calc(var(--sat) + max(8px, calc(16px * var(--ui))));
+  left: calc(var(--sal) + max(8px, calc(16px * var(--ui))));
+  right: calc(var(--sar) + max(8px, calc(16px * var(--ui))));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.hud-right {
+  display: flex;
+  gap: max(8px, calc(12px * var(--ui)));
+}
+
+.toast {
+  display: inline-block;
+  max-width: min(60vw, 520px);
+  padding: 8px 14px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper);
+  font-size: max(13px, calc(18px * var(--ui)));
+  font-weight: 700;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 220ms ease-out, transform 220ms ease-out;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- Pause ---------- */
+
+.screen-modal {
+  pointer-events: auto;
+  background: var(--scrim);
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.panel {
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: 0 12px 32px rgba(58, 36, 24, 0.25);
+  padding: max(12px, calc(28px * var(--ui))) max(16px, calc(32px * var(--ui)));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: max(8px, calc(14px * var(--ui)));
+  max-width: 420px;
+  max-height: 100%;
+  overflow: auto;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.panel h2 {
+  margin: 0;
+  font-size: max(22px, calc(40px * var(--ui)));
+  line-height: 1.05;
+  font-weight: 800;
+}
+
+.panel .sub,
+.panel .note {
+  margin: 0;
+  font-weight: 600;
+  font-size: max(13px, calc(18px * var(--ui)));
+  color: var(--ink-muted);
+}
+
+#stage.compact .panel {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: none;
+}
+
+#stage.compact .panel h2,
+#stage.compact .panel .sub,
+#stage.compact .panel .note {
+  width: 100%;
+}
+
+#stage.compact .panel .sub,
+#stage.compact .panel .note {
+  display: none;
+}
+
+/* ---------- Game HUD ---------- */
+
+.hud-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hud-card,
+.hud-stats {
+  display: flex;
+  align-items: center;
+  gap: max(6px, calc(10px * var(--ui)));
+  padding: max(4px, calc(8px * var(--ui))) max(8px, calc(14px * var(--ui)));
+  background: rgba(255, 248, 236, 0.92);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: max(13px, calc(22px * var(--ui)));
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.hud-day {
+  background: var(--primary);
+  border-radius: 8px;
+  padding: 1px 7px;
+}
+
+.hud-recipe {
+  max-width: 34vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-portions {
+  color: var(--ink-muted);
+}
+
+.hud-stats {
+  font-variant-numeric: tabular-nums;
+  margin-right: 4px;
+}
+
+.hud-timer.low {
+  color: #E5484D;
+}
+
+.hud-strikes {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.hud-strikes svg {
+  width: max(16px, calc(22px * var(--ui)));
+  height: max(16px, calc(22px * var(--ui)));
+}
+
+.hud-right {
+  align-items: center;
+}
+
+#stage.compact .hud-recipe,
+#stage.compact .hud-portions {
+  display: none;
+}
+
+/* Compact play: keep the playfield free. Sound lives in the pause menu; Fullscreen stays (the game may be
+   opened on its own, without the site's button). */
+html.playing #stage.compact #hud-card,
+html.playing #stage.compact #btn-mute {
+  display: none !important;
+}
+
+/* Compact overlays start below the HUD row. */
+#stage.compact .screen-modal,
+#stage.compact .screen-card {
+  padding-top: 52px;
+}
+
+html.playing #stage.compact .hud {
+  top: calc(var(--sat) + 4px);
+  right: calc(var(--sar) + 4px);
+}
+
+#stage.compact .hud-card,
+#stage.compact .hud-stats {
+  font-size: 12px;
+  padding: 3px 6px;
+  border-width: 2px;
+  gap: 5px;
+}
+
+#stage.portrait .hud {
+  flex-wrap: wrap;
+}
+
+/* SOUS-AI line */
+.ai-line {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--sab) + max(10px, calc(20px * var(--ui))));
+  transform: translate(-50%, 10px);
+  max-width: min(86%, 760px);
+  padding: max(6px, calc(10px * var(--ui))) max(10px, calc(18px * var(--ui)));
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: max(12px, calc(20px * var(--ui)));
+  line-height: 1.25;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+}
+
+.ai-line.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Shift card and shift end */
+.screen-card {
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  box-sizing: border-box;
+  background: rgba(58, 36, 24, 0.25);
+}
+
+.card-panel {
+  max-width: 560px;
+}
+
+.card-ai {
+  margin: 0;
+  font-size: max(11px, calc(15px * var(--ui)));
+  font-weight: 700;
+  color: var(--ink-muted);
+  letter-spacing: 0.02em;
+}
+
+.card-new {
+  margin: 0;
+  font-weight: 800;
+  font-size: max(12px, calc(18px * var(--ui)));
+}
+
+.tag-no {
+  display: inline-block;
+  background: #E5484D;
+  color: #FFFFFF;
+  border-radius: 8px;
+  padding: 2px 8px;
+  margin-right: 4px;
+}
+
+.stars {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Unit Report */
+.report-panel {
+  max-width: 460px;
+}
+
+.report-rank {
+  margin: 0;
+  font-weight: 800;
+  font-size: max(16px, calc(26px * var(--ui)));
+}
+
+.report-list {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  margin: 0;
+  text-align: left;
+  font-size: max(13px, calc(18px * var(--ui)));
+}
+
+.report-list dt {
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.report-list dd {
+  margin: 0;
+  font-weight: 800;
+  text-align: right;
+}
+
+.note.small {
+  font-size: max(11px, calc(14px * var(--ui)));
+}
+
+/* Dog Menu */
+.dogmenu-panel {
+  max-width: 640px;
+}
+
+.dogmenu-cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  text-align: left;
+}
+
+.dogmenu-cols h3 {
+  margin: 0 0 6px;
+  font-size: max(13px, calc(18px * var(--ui)));
+  padding: 3px 8px;
+  border-radius: 8px;
+}
+
+.dogmenu-cols ul {
+  margin: 0;
+  padding-left: 18px;
+  font-weight: 600;
+  font-size: max(12px, calc(16px * var(--ui)));
+}
+
+.col-ok {
+  background: #5BB467;
+  color: var(--ink);
+}
+
+.col-no {
+  background: #E5484D;
+  color: #FFFFFF;
+}
+
+.col-bin {
+  background: #D8C9B0;
+}
+
+#stage.compact .report-list,
+#stage.compact .report-panel .note:not(.small),
+#stage.compact .card-ai,
+#stage.compact .card-panel .note {
+  display: none;
+}
+
+/* Compact (343x193): panels fit the frame; buttons sit in a row, the dog-safety note stays visible. */
+#stage.compact .screen-modal {
+  padding: 4px;
+}
+
+#stage.compact .panel {
+  padding: 6px 10px;
+  gap: 6px;
+  border-width: 2px;
+  border-radius: 14px;
+}
+
+#stage.compact .panel .btn-m {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 10px;
+  font-size: 13px;
+  box-shadow: 0 3px 0 var(--paper-lip);
+}
+
+#stage.compact .panel .btn-primary.btn-m {
+  box-shadow: 0 3px 0 var(--primary-lip);
+}
+
+#stage.compact .panel h2 {
+  font-size: 16px;
+}
+
+#stage.compact .dogmenu-panel {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  max-height: 100%;
+}
+
+#stage.compact .dogmenu-cols {
+  gap: 6px;
+  overflow: auto;
+}
+
+#stage.compact .dogmenu-cols h3 {
+  font-size: 11px;
+  padding: 2px 4px;
+}
+
+#stage.compact .dogmenu-cols ul {
+  font-size: 11px;
+  padding-left: 12px;
+}
+
+#stage.compact .panel .note.small {
+  display: block;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+#stage.compact #dogmenu .note.small {
+  display: none;
+}
+
+#stage.compact #btn-dogmenu-close {
+  position: sticky;
+  bottom: 0;
+}
+
+.report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.title-best {
+  font-weight: 800;
+  color: var(--ink);
+}
+
+#stage.compact .title-best {
+  display: none;
+}
+
+/* Title: the second mode, records and skins under the main Play button. */
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: max(6px, calc(10px * var(--ui)));
+}
+
+.title-row .btn-m {
+  min-width: 0;
+  min-height: 44px;
+  font-size: max(14px, calc(20px * var(--ui)));
+  padding: 0 max(12px, calc(20px * var(--ui)));
+}
+
+#stage.compact .title-row {
+  flex-wrap: nowrap;
+  gap: 3px;
+}
+
+#stage.compact .title-row .btn-m {
+  font-size: 10.5px;
+  min-height: 30px;
+  padding: 0 5px;
+  white-space: nowrap;
+  box-shadow: 0 3px 0 var(--paper-lip);
+}
+
+#stage.compact .title-card:has(.title-row) {
+  width: 72%;
+}
+
+.btn-s {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: max(13px, calc(18px * var(--ui)));
+  font-weight: 700;
+}
+
+.btn-s[aria-pressed='true'] {
+  background: var(--primary);
+  box-shadow: 0 4px 0 var(--primary-lip);
+}
+
+.seg {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.se-place,
+.report-extra {
+  margin: 0;
+  font-weight: 800;
+  font-size: max(14px, calc(22px * var(--ui)));
+  color: var(--good, #5BB467);
+}
+
+/* Records: top scores per level, this device only. */
+.records-panel {
+  max-width: 640px;
+}
+
+.records-table {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  text-align: center;
+}
+
+.records-table h3 {
+  margin: 0 0 4px;
+  font-size: max(13px, calc(18px * var(--ui)));
+  font-weight: 800;
+}
+
+.records-table ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-weight: 700;
+  font-size: max(13px, calc(18px * var(--ui)));
+  font-variant-numeric: tabular-nums;
+}
+
+.records-table li:first-child {
+  color: var(--primary-lip);
+  font-weight: 900;
+}
+
+/* Skins: unlocked by records. */
+.skins-panel {
+  max-width: 680px;
+}
+
+.skins-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.skin-btn {
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 0 5px 0 var(--paper-lip);
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  touch-action: manipulation;
+}
+
+.skin-btn .swatch {
+  width: 34px;
+  height: 22px;
+  border-radius: 6px 6px 18px 18px;
+  border: 2px solid var(--ink);
+}
+
+.skin-btn b {
+  font-size: max(13px, calc(17px * var(--ui)));
+}
+
+.skin-btn small {
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.skin-btn[disabled] {
+  opacity: 0.45;
+}
+
+.skin-btn[aria-pressed='true'] {
+  background: var(--primary);
+  box-shadow: 0 5px 0 var(--primary-lip);
+}
+
+#stage.compact .records-table,
+#stage.compact .skins-list {
+  gap: 4px;
+}
+
+#stage.compact .records-table h3,
+#stage.compact .records-table ol,
+#stage.compact .skin-btn b,
+#stage.compact .skin-btn small {
+  font-size: 10px;
+}
+
+#stage.compact .skin-btn {
+  padding: 3px;
+  border-width: 2px;
+}
+
+#stage.compact .skin-btn .swatch {
+  width: 22px;
+  height: 14px;
+}
+
+#stage.compact .records-panel,
+#stage.compact .skins-panel {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  max-height: 100%;
+  overflow: auto;
+}
+
+/* Upgrade cards: pick 1 of 3 between shifts. */
+.cards-panel {
+  max-width: 720px;
+}
+
+.cards-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: max(8px, calc(14px * var(--ui)));
+}
+
+.card-btn {
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 0 6px 0 var(--paper-lip);
+  padding: max(10px, calc(16px * var(--ui))) 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  touch-action: manipulation;
+}
+
+.card-btn h3 {
+  margin: 0;
+  font-size: max(14px, calc(20px * var(--ui)));
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.card-btn p {
+  margin: 0;
+  font-weight: 700;
+  font-size: max(12px, calc(16px * var(--ui)));
+  color: var(--ink-muted);
+}
+
+.card-btn .card-key {
+  font-size: max(11px, calc(13px * var(--ui)));
+  font-weight: 800;
+  color: var(--ink-muted);
+}
+
+.card-btn .tag-rare {
+  font-size: max(10px, calc(12px * var(--ui)));
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  background: var(--primary);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+.card-btn:active {
+  transform: translateY(6px);
+  box-shadow: 0 0 0 var(--paper-lip);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 0 var(--paper-lip);
+  }
+}
+
+#stage.compact .cards-panel {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+#stage.compact .cards-list {
+  gap: 6px;
+}
+
+#stage.compact .card-btn {
+  padding: 6px 4px;
+  border-width: 2px;
+  border-radius: 10px;
+  box-shadow: 0 3px 0 var(--paper-lip);
+  gap: 2px;
+  min-height: 44px;
+}
+
+#stage.compact .card-btn h3 {
+  font-size: 12px;
+}
+
+#stage.compact .card-btn p {
+  font-size: 10px;
+}
+
+#stage.compact .card-btn .card-key {
+  display: none;
+}
+
+/* ---------- Debug overlay (?debug=1) ---------- */
+
+#dbg {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  margin: 0;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font: 11px/1.3 ui-monospace, Consolas, monospace;
+  pointer-events: none;
+  white-space: pre;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #play {
+    animation: none;
+  }
+  .btn,
+  .toast {
+    transition: none;
+  }
+}

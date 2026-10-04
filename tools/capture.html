@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capture site images</title>
+<style>
+  body { margin: 0; padding: 12px; background: #222; color: #eee; font: 13px/1.4 system-ui, sans-serif; }
+  canvas { width: 640px; height: 360px; display: block; margin: 8px 0; background: #000; }
+  pre { white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<p>Renders the site images at 1280x720 (DPR 1, no UI) and saves them as JPEG 0.85 to <code>site/</code> through the dev server. Add <code>?save=0</code> to preview only.</p>
+<canvas id="c" width="1280" height="720"></canvas>
+<pre id="log"></pre>
+<script type="module" src="./capture.mjs"></script>
+</body>
+</html>
